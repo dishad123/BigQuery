@@ -1,0 +1,317 @@
+SELECT
+  origin,
+  destination,
+  SUBSTR(origin,1,2)AS originCountryCode,
+  SUBSTR(destination,1,2) AS destinationCountryCode,
+  vendor_id,
+  expiry,
+  start_date,
+  carrier_name,
+  currency,
+  contract_number,
+  cargo_type,
+  commodity,
+  SUM(cost_20GP) AS cost_20GP,
+  SUM(cost_40GP) AS cost_40GP,
+  SUM(cost_40HC) AS cost_40HC,
+  SUM(cost_45HC) AS cost_45HC,
+  SUM(cost_20RE) AS cost_20RE,
+  SUM(cost_40RE) AS cost_40RE,
+  SUM(cost_40HR) AS cost_40HR,
+  SUM(cost_40NR) AS cost_40NR,
+  SUM(cost_20FR) AS cost_20FR,
+  SUM(cost_40FR) AS cost_40FR,
+  SUM(cost_20OT) AS cost_20OT,
+  SUM(cost_40OT) AS cost_40OT,
+FROM (
+  SELECT
+    s.origin,
+    s.destination,
+    SUBSTR(origin,1,2)AS originCountryCode,
+    SUBSTR(destination,1,2) AS destinationCountryCode,
+    s.vendor_id,
+    s.sv_id,
+    s.expiry,
+    s.start_date,
+    s.carrier_name,
+    s.charge_name,
+    s.currency,
+    s.contract_number,
+    s.cargo_type,
+    s.commodity,
+    IF
+  (currency NOT IN ('USD'), s.cost_40FR/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_40FR) as cost_40FR ,
+   
+    IF
+  (currency NOT IN ('USD'), s.cost_40OT/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+    
+        AND key=currency ) AS FLOAT64), s.cost_40OT) as cost_40OT ,
+    
+    IF
+  (currency NOT IN ('USD'), s.cost_20OT/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+  
+        AND key=currency ) AS FLOAT64), s.cost_20OT) as cost_20OT ,
+
+   
+    IF
+  (currency NOT IN ('USD'), s.cost_40GP/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+   
+        AND key=currency ) AS FLOAT64), s.cost_40GP) as cost_40GP ,
+    
+    IF
+  (currency NOT IN ('USD'), s.cost_20FR/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_20FR) as cost_20FR ,
+   
+    IF
+  (currency NOT IN ('USD'), s.cost_45HC/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_45HC) as cost_45HC ,
+    
+    IF
+  (currency NOT IN ('USD'), s.cost_20GP/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_20GP) as cost_20GP ,
+   
+    IF
+  (currency NOT IN ('USD'), s.cost_20RE/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_20RE) as cost_20RE ,
+   
+    IF
+  (currency NOT IN ('USD'), s.cost_40HC/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_40HC) as cost_40HC ,
+   
+    IF
+  (currency NOT IN ('USD'), s.cost_40NR/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_40NR) as cost_40NR ,
+    
+    IF
+  (currency NOT IN ('USD'), s.cost_40HR/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_40HR) as cost_40HR ,
+    
+    IF
+  (currency NOT IN ('USD'), s.cost_40RE/CAST((
+      SELECT
+        value
+      FROM
+        `dw-freight-forwarder.mg_rate.currency_conversion`
+      WHERE
+        vendor_id IN (1498)
+        AND key=currency ) AS FLOAT64), s.cost_40RE) as cost_40RE ,
+  FROM
+    `dw-freight-forwarder.my_rates.rates_visibility_v2_surcharges` AS s
+  UNION ALL
+  SELECT
+    bof.origin,
+    bof.destination,
+    bof.originCountryCode,
+    bof.destinationCountryCode,
+    bof.vendor_id,
+    bof.sv_id,
+    bof.expiry,
+    bof.start_date,
+    bof.carrier_name,
+    'Basic_Ocean_Freight'AS charge_name,
+    bof.currency,
+    bof.contract_number,
+    bof.cargo_type,
+    bof.commodity,
+    bof.cost_40FR,
+    bof.cost_40OT,
+    bof.cost_20OT,
+    bof.cost_40GP,
+    bof.cost_20FR,
+    bof.cost_45HC,
+    bof.cost_20GP,
+    bof.cost_20RE,
+    bof.cost_40HC,
+    bof.cost_40NR,
+    bof.cost_40HR,
+    bof.cost_40RE
+  FROM
+    `dw-freight-forwarder.my_rates.rates_visibility_v2` AS bof) AS m
+WHERE
+  m.vendor_id IN (1498,
+    2068,
+    1505,
+    2035,
+    2121,
+    2031) 
+    and m.sv_id IN (466,681,509,739,794,510)
+  AND m.origin IN ("CNDLC",
+    "CNSHA",
+    "CNSHA",
+    "CNSHK",
+    "CNTNJ",
+    "CNNGB",
+    "CNSHA",
+    "CNSHK",
+    "CNTAO",
+    "CNNGB",
+    "CNNGB",
+    "CNNGB",
+    "CNNGB",
+    "CNNSA",
+    "CNSHA",
+    "CNSHA",
+    "CNSHA",
+    "CNSHA",
+    "CNSHA",
+    "CNTAO",
+    "CNTAO",
+    "CNTNJ",
+    "CNXAM",
+    "CNYTN",
+    "CNYTN",
+    "IDSUB",
+    "KRPUS",
+    "MYPKG",
+    "TWKHH",
+    "VNHPH",
+    "VNHPH",
+    "VNSGN",
+    "CNDLC",
+    "CNNGB",
+    "CNNGB",
+    "CNNGB",
+    "CNSHA",
+    "CNSHA",
+    "CNSHA",
+    "CNXAM",
+    "CNNGB",
+    "CNTAO",
+    "CNYTN",
+    "CNSHA",
+    "CNSHK",
+    "THLCM",
+    "BDCGP",
+    "INNSA",
+    "INTUT" )
+  AND m.destination IN ("ITGOA",
+    "ESBCN",
+    "ITTRS",
+    "SIKOP",
+    "SIKOP",
+    "ESBCN",
+    "AEJEA",
+    "AEJEA",
+    "AEJEA",
+    "AEJEA",
+    "DEBRV",
+    "DEHAM",
+    "NLRTM",
+    "PLGDN",
+    "DEHAM",
+    "BEANR",
+    "DEBRV",
+    "DEHAM",
+    "NLRTM",
+    "PLGDN",
+    "DEHAM",
+    "NLRTM",
+    "DEHAM",
+    "DEHAM",
+    "DEHAM",
+    "NLRTM",
+    "DEHAM",
+    "DEHAM",
+    "DEHAM",
+    "DEHAM",
+    "DEHAM",
+    "NLRTM",
+    "DEHAM",
+    "PECLL",
+    "CLSAI",
+    "CLVAP",
+    "MXZLO",
+    "BRSSZ",
+    "CLVAP",
+    "MXZLO",
+    "CLSAI",
+    "MXMEX",
+    "GBFXT",
+    "GBSOU",
+    "ZADUR",
+    "ZADUR",
+    "ZADUR",
+    "DEHAM",
+    "DEHAM",
+    "DEHAM")
+   
+GROUP BY
+  origin,
+  destination,
+  vendor_id,
+  sv_id,
+  expiry,
+  start_date,
+  carrier_name,
+  currency,
+  contract_number,
+  cargo_type,
+  commodity
+  
